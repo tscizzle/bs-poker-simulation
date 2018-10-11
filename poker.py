@@ -123,7 +123,7 @@ def two_pair_finder(natural_cards, num_wilds=0):
         if count >= 2:
             pair_rank_counts[rank] = count / 2
         if count % 2 == 1:
-            solo_rank_counts[rank] = count % 2
+            solo_rank_counts[rank] = 1
 
     num_wilds_left = num_wilds
     while num_wilds_left >= 1:
@@ -184,13 +184,13 @@ def three_of_a_kind_finder(natural_cards, num_wilds=0):
 
 def straight_finder(natural_cards, num_wilds=0):
     ranks = set(get_card_rank(card) for card in natural_cards)
-    missing_ranks = sorted(rank for rank in range(2, 15) if rank not in ranks)
-    missing_ranks = [1] + missing_ranks + [15]
-    straight_top_ranks = [
-        missing_ranks[i]-1
-        for i in range(len(missing_ranks)-1, 0, -1)
-        if (missing_ranks[i] - missing_ranks[i-1]) > 5
-    ]
+
+    straight_top_ranks = []
+    for top_rank in range(14, 4, -1):
+        missing_ranks = set(range(top_rank-4, top_rank+1)) - ranks
+        if len(missing_ranks) <= num_wilds:
+            straight_top_ranks.append(top_rank)
+
     if len(straight_top_ranks) == 0:
         return False, {}
     else:
@@ -199,41 +199,134 @@ def straight_finder(natural_cards, num_wilds=0):
 
 def flush_finder(natural_cards, num_wilds=0):
     suit_counts = Counter(get_card_suit(card) for card in natural_cards)
-    flush_suits = set(suit for suit, count in suit_counts.items() if count >= 5)
-    if len(flush_suits) == 0:
+
+    wilds_needed = 5 - max(suit_counts.values())
+    found_flush = num_wilds >= wilds_needed
+
+    if not found_flush:
         return False, {}
     else:
-        flush_ranks = [
-            get_card_rank(card)
-            for card in natural_cards
-            if get_card_suit(card) in flush_suits
-        ]
-        top_rank = max(flush_ranks)
+        if num_wilds == 0:
+            flush_suits = set(
+                suit
+                for suit, count in suit_counts.items()
+                if count >= 5
+            )
+            flush_ranks = [
+                get_card_rank(card)
+                for card in natural_cards
+                if get_card_suit(card) in flush_suits
+            ]
+            top_rank = max(flush_ranks)
+        elif num_wilds >= 1:
+            top_rank = 14
+
         return True, { 'top_rank': top_rank }
 
 def full_house_finder(natural_cards, num_wilds=0):
     rank_counts = Counter(get_card_rank(card) for card in natural_cards)
+    triplet_rank_counts = defaultdict(int)
+    pair_rank_counts = defaultdict(int)
+    solo_rank_counts = defaultdict(int)
+    for rank, count in rank_counts.items():
+        if count >= 3:
+            triplet_rank_counts[rank] = count / 3
+        if count % 3 == 2:
+            pair_rank_counts[rank] = 1
+        if count % 3 == 1:
+            solo_rank_counts[rank] = 1
+
+    if num_wilds == 0:
+        enough_triplets = len(triplet_rank_counts) >= 1
+        enough_pairs = len(triplet_rank_counts) + len(pair_rank_counts) >= 2
+        if not enough_triplets or not enough_pairs:
+            return False, {}
+        else:
+            triplet_rank = max(triplet_rank_counts.keys())
+            mh.decrementCounter(triplet_rank_counts, triplet_rank, 1)
+            pair_rank = max(
+                triplet_rank_counts.keys() + pair_rank_counts.keys()
+            )
+            return True, {
+                'triplet_rank': triplet_rank,
+                'pair_rank': pair_rank,
+            }
+    elif num_wilds == 1 or num_wilds == 2:
+        candidates = [
+            full_house_finder(natural_cards + [card], num_wilds=num_wilds-1)
+            for card in range(13)
+        ]
+        candidate_tie_break_dicts = [
+            tie_break_dict
+            for found_full_house, tie_break_dict in candidates
+            if found_full_house
+        ]
+        if len(candidate_tie_break_dicts) == 0:
+            return False, {}
+        else:
+            best_tie_break_dict = { 'triplet_rank': -1, 'pair_rank': -1 }
+            for tie_break_dict in candidate_tie_break_dicts:
+                better_triplet_rank = (
+                    tie_break_dict['triplet_rank'] >
+                    best_tie_break_dict['triplet_rank']
+                )
+                same_triplet_rank = (
+                    tie_break_dict['triplet_rank'] ==
+                    best_tie_break_dict['triplet_rank']
+                )
+                better_pair_rank = (
+                    tie_break_dict['pair_rank'] >
+                    best_tie_break_dict['pair_rank']
+                )
+                if (
+                    better_triplet_rank or
+                    (same_triplet_rank and better_pair_rank)
+                ):
+                    best_tie_break_dict = tie_break_dict
+            return True, best_tie_break_dict
+    elif num_wilds == 3:
+        if len(triplet_rank_counts) + len(pair_rank_counts) == 0:
+            return False, {}
+        else:
+            pair_rank = max(
+                triplet_rank_counts.keys() + pair_rank_counts.keys()
+            )
+            return True, { 'triplet_rank': 14, 'pair_rank': pair_rank }
+    elif num_wilds == 4:
+        if len(natural_cards) == 0:
+            return False, {}
+        else:
+            pair_rank = max(rank_counts.keys())
+            return True, { 'triplet_rank': 14, 'pair_rank': pair_rank }
+    elif num_wilds >= 5:
+        return True, { 'triplet_rank': 14, 'pair_rank': 14 }
+
+def four_of_a_kind_finder(natural_cards, num_wilds=0):
+    rank_counts = Counter(get_card_rank(card) for card in natural_cards)
+    solo_ranks = set(rank for rank, count in rank_counts.items() if count >= 1)
+    pair_ranks = set(rank for rank, count in rank_counts.items() if count >= 2)
     triplet_ranks = set(
         rank
         for rank, count in rank_counts.items()
         if count >= 3
     )
-    pair_ranks = set(rank for rank, count in rank_counts.items() if count >= 2)
-    if len(triplet_ranks) == 0 or len(pair_ranks) < 2:
-        return False, {}
-    else:
-        triplet_rank = max(triplet_ranks)
-        pair_ranks.remove(triplet_rank)
-        pair_rank = max(pair_ranks)
-        return True, { 'triplet_rank': triplet_rank, 'pair_rank': pair_rank }
-
-def four_of_a_kind_finder(natural_cards, num_wilds=0):
-    rank_counts = Counter(get_card_rank(card) for card in natural_cards)
     quartet_ranks = set(
         rank
         for rank, count in rank_counts.items()
         if count >= 4
     )
+
+    if num_wilds == 0:
+        quartet_ranks = quartet_ranks
+    elif num_wilds == 1:
+        quartet_ranks = quartet_ranks | triplet_ranks
+    elif num_wilds == 2:
+        quartet_ranks = quartet_ranks | triplet_ranks | pair_ranks
+    elif num_wilds == 3:
+        quartet_ranks = quartet_ranks | triplet_ranks | pair_ranks | solo_ranks
+    elif num_wilds >= 4:
+        quartet_ranks = [14]
+
     if len(quartet_ranks) == 0:
         return False, {}
     else:
