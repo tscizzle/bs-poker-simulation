@@ -251,6 +251,8 @@ def full_house_finder(natural_cards, num_wilds=0):
                 'triplet_rank': triplet_rank,
                 'pair_rank': pair_rank,
             }
+    # TODO: this recursive technique is the most time consuming part of all the hand finders.
+    #       instead, directly handle each case of num_wilds and rank_counts
     elif num_wilds == 1 or num_wilds == 2:
         candidates = [
             full_house_finder(natural_cards + [card], num_wilds=num_wilds-1)

@@ -718,6 +718,196 @@ class TestPoker(unittest.TestCase):
             (True, { 'rank': 14 })
         )
 
+    def test_straight_flush_finder(self):
+        solo_run_hand = [
+            cn.FOUR_OF_HEARTS,
+        ]
+        self.assertEqual(
+            poker.straight_flush_finder(solo_run_hand, num_wilds=0),
+            (False, {})
+        )
+        self.assertEqual(
+            poker.straight_flush_finder(solo_run_hand, num_wilds=1),
+            (False, {})
+        )
+        self.assertEqual(
+            poker.straight_flush_finder(solo_run_hand, num_wilds=2),
+            (False, {})
+        )
+        self.assertEqual(
+            poker.straight_flush_finder(solo_run_hand, num_wilds=3),
+            (False, {})
+        )
+        self.assertEqual(
+            poker.straight_flush_finder(solo_run_hand, num_wilds=4),
+            (True, { 'top_rank': 8 })
+        )
+        self.assertEqual(
+            poker.straight_flush_finder(solo_run_hand, num_wilds=5),
+            (True, { 'top_rank': 14 })
+        )
+
+        two_in_diff_suits_hand = [
+            cn.FOUR_OF_HEARTS,
+            cn.SIX_OF_HEARTS,
+            cn.SIX_OF_SPADES,
+        ]
+        self.assertEqual(
+            poker.straight_flush_finder(two_in_diff_suits_hand, num_wilds=0),
+            (False, {})
+        )
+        self.assertEqual(
+            poker.straight_flush_finder(two_in_diff_suits_hand, num_wilds=1),
+            (False, {})
+        )
+        self.assertEqual(
+            poker.straight_flush_finder(two_in_diff_suits_hand, num_wilds=2),
+            (False, {})
+        )
+        self.assertEqual(
+            poker.straight_flush_finder(two_in_diff_suits_hand, num_wilds=3),
+            (True, { 'top_rank': 8 })
+        )
+        self.assertEqual(
+            poker.straight_flush_finder(two_in_diff_suits_hand, num_wilds=4),
+            (True, { 'top_rank': 10 })
+        )
+        self.assertEqual(
+            poker.straight_flush_finder(two_in_diff_suits_hand, num_wilds=5),
+            (True, { 'top_rank': 14 })
+        )
+
+        two_in_same_suit_hand = [
+            cn.EIGHT_OF_CLUBS,
+            cn.FOUR_OF_HEARTS,
+            cn.SIX_OF_HEARTS,
+        ]
+        self.assertEqual(
+            poker.straight_flush_finder(two_in_same_suit_hand, num_wilds=0),
+            (False, {})
+        )
+        self.assertEqual(
+            poker.straight_flush_finder(two_in_same_suit_hand, num_wilds=1),
+            (False, {})
+        )
+        self.assertEqual(
+            poker.straight_flush_finder(two_in_same_suit_hand, num_wilds=2),
+            (False, {})
+        )
+        self.assertEqual(
+            poker.straight_flush_finder(two_in_same_suit_hand, num_wilds=3),
+            (True, { 'top_rank': 8 })
+        )
+        self.assertEqual(
+            poker.straight_flush_finder(two_in_same_suit_hand, num_wilds=4),
+            (True, { 'top_rank': 12 })
+        )
+        self.assertEqual(
+            poker.straight_flush_finder(two_in_same_suit_hand, num_wilds=5),
+            (True, { 'top_rank': 14 })
+        )
+
+        three_in_run_same_suit_hand = [
+            cn.SEVEN_OF_CLUBS,
+            cn.EIGHT_OF_CLUBS,
+            cn.FOUR_OF_HEARTS,
+            cn.SIX_OF_HEARTS,
+            cn.SEVEN_OF_HEARTS,
+        ]
+        self.assertEqual(
+            poker.straight_flush_finder(
+                three_in_run_same_suit_hand,
+                num_wilds=0
+            ),
+            (False, {})
+        )
+        self.assertEqual(
+            poker.straight_flush_finder(
+                three_in_run_same_suit_hand,
+                num_wilds=1
+            ),
+            (False, {})
+        )
+        self.assertEqual(
+            poker.straight_flush_finder(
+                three_in_run_same_suit_hand,
+                num_wilds=2
+            ),
+            (True, { 'top_rank': 8 })
+        )
+        self.assertEqual(
+            poker.straight_flush_finder(
+                three_in_run_same_suit_hand,
+                num_wilds=3
+            ),
+            (True, { 'top_rank': 11 })
+        )
+        self.assertEqual(
+            poker.straight_flush_finder(
+                three_in_run_same_suit_hand,
+                num_wilds=4
+            ),
+            (True, { 'top_rank': 12 })
+        )
+        self.assertEqual(
+            poker.straight_flush_finder(
+                three_in_run_same_suit_hand,
+                num_wilds=5
+            ),
+            (True, { 'top_rank': 14 })
+        )
+
+        five_in_run_same_suit_hand = [
+            cn.NINE_OF_HEARTS,
+            cn.THREE_OF_SPADES,
+            cn.FOUR_OF_SPADES,
+            cn.FIVE_OF_SPADES,
+            cn.SIX_OF_SPADES,
+            cn.SEVEN_OF_SPADES,
+        ]
+        self.assertEqual(
+            poker.straight_flush_finder(
+                five_in_run_same_suit_hand,
+                num_wilds=0
+            ),
+            (True, { 'top_rank': 7 })
+        )
+        self.assertEqual(
+            poker.straight_flush_finder(
+                five_in_run_same_suit_hand,
+                num_wilds=1
+            ),
+            (True, { 'top_rank': 8 })
+        )
+        self.assertEqual(
+            poker.straight_flush_finder(
+                five_in_run_same_suit_hand,
+                num_wilds=2
+            ),
+            (True, { 'top_rank': 9 })
+        )
+        self.assertEqual(
+            poker.straight_flush_finder(
+                five_in_run_same_suit_hand,
+                num_wilds=3
+            ),
+            (True, { 'top_rank': 10 })
+        )
+        self.assertEqual(
+            poker.straight_flush_finder(
+                five_in_run_same_suit_hand,
+                num_wilds=4
+            ),
+            (True, { 'top_rank': 13 })
+        )
+        self.assertEqual(
+            poker.straight_flush_finder(
+                five_in_run_same_suit_hand,
+                num_wilds=5
+            ),
+            (True, { 'top_rank': 14 })
+        )
+
 
 if __name__ == '__main__':
     unittest.main()
