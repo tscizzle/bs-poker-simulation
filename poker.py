@@ -89,7 +89,13 @@ Order of hand_type's, along with their tie_break_dict parameters:
 
 Each hand_type's finder takes in a non-empty list of cards and a number of
 wilds, and returns a tuple of (found_hand: boolean, tie_break_dict)
+
+Each hand_type's sortkey_func takes in a tie_break_dict, and returns a float
+from 0 through 9, each half-open interval [n, n+1) represnting the range for a
+single hand_type. For example, any number 5.xyz represents a flush.
 """
+
+## FINDERS
 
 def high_card_finder(natural_cards, num_wilds=0):
     if num_wilds == 0:
@@ -200,7 +206,7 @@ def straight_finder(natural_cards, num_wilds=0):
 def flush_finder(natural_cards, num_wilds=0):
     suit_counts = Counter(get_card_suit(card) for card in natural_cards)
 
-    wilds_needed = 5 - max(suit_counts.values())
+    wilds_needed = 5 - max(suit_counts.values() + [0])
     found_flush = num_wilds >= wilds_needed
 
     if not found_flush:
@@ -251,8 +257,9 @@ def full_house_finder(natural_cards, num_wilds=0):
                 'triplet_rank': triplet_rank,
                 'pair_rank': pair_rank,
             }
-    # TODO: this recursive technique is the most time consuming part of all the hand finders.
-    #       instead, directly handle each case of num_wilds and rank_counts
+    # TODO: this recursive technique is the most time consuming part of all the
+    #       hand finders. instead of recursing, directly handle each case of
+    #       num_wilds / rank_counts
     elif num_wilds == 1 or num_wilds == 2:
         candidates = [
             full_house_finder(natural_cards + [card], num_wilds=num_wilds-1)
@@ -355,16 +362,109 @@ def straight_flush_finder(natural_cards, num_wilds=0):
         top_rank = max(straight_flush_top_ranks)
         return True, { 'top_rank': top_rank }
 
+## SORTKEY FUNCS
+
+NUM_RANKS = 14.0
+
+def high_card_sortkey_func(tie_break_dict):
+    rank = tie_break_dict['rank']
+    tie_break_val = rank / NUM_RANKS
+    return 0 + (tie_break_val * 0.95)
+
+def one_pair_sortkey_func(tie_break_dict):
+    rank = tie_break_dict['rank']
+    tie_break_val = rank / NUM_RANKS
+    return 1 + (tie_break_val * 0.95)
+
+def two_pair_sortkey_func(tie_break_dict):
+    high_rank = tie_break_dict['high_rank']
+    low_rank = tie_break_dict['low_rank']
+    tie_break_val = ((high_rank * NUM_RANKS) + low_rank) / ((NUM_RANKS + 1)**2)
+    return 2 + (tie_break_val * 0.95)
+
+def three_of_a_kind_sortkey_func(tie_break_dict):
+    rank = tie_break_dict['rank']
+    tie_break_val = rank / NUM_RANKS
+    return 3 + (tie_break_val * 0.95)
+
+def straight_sortkey_func(tie_break_dict):
+    top_rank = tie_break_dict['top_rank']
+    tie_break_val = top_rank / NUM_RANKS
+    return 4 + (tie_break_val * 0.95)
+
+def flush_sortkey_func(tie_break_dict):
+    top_rank = tie_break_dict['top_rank']
+    tie_break_val = top_rank / NUM_RANKS
+    return 5 + (tie_break_val * 0.95)
+
+def full_house_sortkey_func(tie_break_dict):
+    triplet_rank = tie_break_dict['triplet_rank']
+    pair_rank = tie_break_dict['pair_rank']
+    tie_break_val = (
+        ((triplet_rank * NUM_RANKS) + pair_rank) /
+        ((NUM_RANKS + 1)**2)
+    )
+    return 6 + (tie_break_val * 0.95)
+
+def four_of_a_kind_sortkey_func(tie_break_dict):
+    rank = tie_break_dict['rank']
+    tie_break_val = rank / NUM_RANKS
+    return 7 + (tie_break_val * 0.95)
+
+def straight_flush_sortkey_func(tie_break_dict):
+    top_rank = tie_break_dict['top_rank']
+    tie_break_val = top_rank / NUM_RANKS
+    return 8 + (tie_break_val * 0.95)
+
+
+## PUTTING IT ALL TOGETHER
+
 HAND_TYPES = [
-    { 'hand_type': 'high_card',       'finder': high_card_finder },
-    { 'hand_type': 'one_pair',        'finder': one_pair_finder },
-    { 'hand_type': 'two_pair',        'finder': two_pair_finder },
-    { 'hand_type': 'three_of_a_kind', 'finder': three_of_a_kind_finder },
-    { 'hand_type': 'straight',        'finder': straight_finder },
-    { 'hand_type': 'flush',           'finder': flush_finder },
-    { 'hand_type': 'full_house',      'finder': full_house_finder },
-    { 'hand_type': 'four_of_a_kind',  'finder': four_of_a_kind_finder },
-    { 'hand_type': 'straight_flush',  'finder': straight_flush_finder },
+    {
+        'hand_type': 'high_card',
+        'finder': high_card_finder,
+        'sortkey_func': high_card_sortkey_func,
+    },
+    {
+        'hand_type': 'one_pair',
+        'finder': one_pair_finder,
+        'sortkey_func': one_pair_sortkey_func,
+    },
+    {
+        'hand_type': 'two_pair',
+        'finder': two_pair_finder,
+        'sortkey_func': two_pair_sortkey_func,
+    },
+    {
+        'hand_type': 'three_of_a_kind',
+        'finder': three_of_a_kind_finder,
+        'sortkey_func': three_of_a_kind_sortkey_func,
+    },
+    {
+        'hand_type': 'straight',
+        'finder': straight_finder,
+        'sortkey_func': straight_sortkey_func,
+    },
+    {
+        'hand_type': 'flush',
+        'finder': flush_finder,
+        'sortkey_func': flush_sortkey_func,
+    },
+    {
+        'hand_type': 'full_house',
+        'finder': full_house_finder,
+        'sortkey_func': full_house_sortkey_func,
+    },
+    {
+        'hand_type': 'four_of_a_kind',
+        'finder': four_of_a_kind_finder,
+        'sortkey_func': four_of_a_kind_sortkey_func,
+    },
+    {
+        'hand_type': 'straight_flush',
+        'finder': straight_flush_finder,
+        'sortkey_func': straight_flush_sortkey_func,
+    },
 ]
 
 def get_best_hand(cards, is_wild_func):
@@ -379,3 +479,9 @@ def get_best_hand(cards, is_wild_func):
         )
         if found_hand:
             return hand_type, tie_break_dict
+
+def get_hand_sortkey(hand_type, tie_break_dict):
+    hand_type_obj = [o for o in HAND_TYPES if o['hand_type'] == hand_type][0]
+    sortkey_func = hand_type_obj['sortkey_func']
+    sortkey = sortkey_func(tie_break_dict)
+    return sortkey
