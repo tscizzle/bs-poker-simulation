@@ -21,7 +21,7 @@ def simulate_hands(hand_size, num_trials):
     return best_hands
 
 def generate_hand_size_median_hands_csv(num_trials):
-    for hand_size in range(3, 29):
+    for hand_size in range(2, 29):
         best_hands = simulate_hands(hand_size, num_trials)
         sorted_best_hands = sorted(
             best_hands,
